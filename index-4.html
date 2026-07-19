@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0E1220">
+<title>Meu Dia — Agenda</title>
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,600&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   MEU DIA — Agenda noturna
+   Paleta inspirada em "A Noite e o Luar":
+   noite profunda, prata do luar e o dourado da lamparina.
+   ============================================================ */
+:root{
+  --fundo:#0E1220;
+  --cartao:#171D30;
+  --cartao-2:#1E2640;
+  --borda:#2A3352;
+  --texto:#EAEEF8;
+  --texto-2:#96A1BC;
+  --luar:#9FB4E4;   /* prata azulado — ações e links */
+  --lua:#E8C97A;    /* dourado — o dia de hoje */
+  --perigo:#E28080;
+  --cat-compromisso:#9FB4E4;
+  --cat-escrita:#E8C97A;
+  --cat-saude:#7FCBA6;
+  --cat-pessoal:#CE93C1;
+  --raio:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--fundo);
+  color:var(--texto);
+  font-family:'Nunito Sans',system-ui,sans-serif;
+  font-size:16px;
+  padding-bottom:110px;
+}
+/* céu sutil ao fundo */
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(1px 1px at 15% 12%, #ffffff55 50%, transparent 51%),
+    radial-gradient(1px 1px at 70% 8%,  #ffffff40 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 85% 22%, #ffffff30 50%, transparent 51%),
+    radial-gradient(1px 1px at 40% 18%, #ffffff35 50%, transparent 51%),
+    radial-gradient(600px 300px at 80% -10%, #1B2440 0%, transparent 70%);
+}
+main, header, nav{position:relative;z-index:1}
+
+/* ---------- Cabeçalho ---------- */
+header{padding:26px 20px 8px;display:flex;align-items:flex-start;gap:14px}
+.lua-svg{flex:0 0 44px;margin-top:4px}
+h1.saudacao{
+  font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;
+  font-size:1.9rem;line-height:1.15;color:var(--texto);
+}
+.data-extenso{color:var(--texto-2);font-size:.9rem;margin-top:4px}
+.resumo-dia{color:var(--lua);font-size:.9rem;margin-top:6px;font-weight:600}
+
+/* ---------- Abas ---------- */
+nav.abas{display:flex;gap:8px;padding:14px 20px 6px}
+.aba{
+  flex:1;text-align:center;padding:10px 0;border-radius:999px;
+  background:var(--cartao);border:1px solid var(--borda);
+  color:var(--texto-2);font-weight:700;font-size:.9rem;cursor:pointer;
+}
+.aba.ativa{background:var(--cartao-2);color:var(--lua);border-color:var(--lua)}
+
+/* ---------- Linha do dia (timeline) ---------- */
+main{padding:14px 20px}
+.dia-titulo{
+  font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;
+  font-size:1.25rem;color:var(--luar);margin:18px 0 10px;
+}
+.linha{position:relative;padding-left:22px}
+.linha::before{
+  content:"";position:absolute;left:6px;top:8px;bottom:8px;width:1px;
+  background:linear-gradient(var(--borda), transparent);
+}
+.evento{
+  position:relative;background:var(--cartao);border:1px solid var(--borda);
+  border-radius:var(--raio);padding:14px 14px 12px;margin-bottom:12px;
+}
+.evento::before{
+  content:"";position:absolute;left:-20px;top:20px;width:9px;height:9px;
+  border-radius:50%;background:var(--cor-cat,var(--luar));
+  box-shadow:0 0 8px var(--cor-cat,var(--luar));
+}
+.evento.hoje-destaque{border-color:#3A4468}
+.evento .hora{font-weight:700;color:var(--lua);font-size:.85rem;letter-spacing:.04em}
+.evento .hora.sem-hora{color:var(--texto-2)}
+.evento .titulo{font-size:1.05rem;font-weight:700;margin:2px 0}
+.evento .notas{color:var(--texto-2);font-size:.88rem;white-space:pre-wrap}
+.evento .rodape{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chip{
+  font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:999px;
+  border:1px solid var(--cor-cat,var(--borda));color:var(--cor-cat,var(--texto-2));
+}
+.chip.repete{border-color:var(--borda);color:var(--texto-2)}
+.evento .acoes{margin-left:auto;display:flex;gap:6px}
+.botao-mini{
+  background:var(--cartao-2);border:1px solid var(--borda);color:var(--texto-2);
+  border-radius:10px;padding:6px 10px;font-size:.8rem;font-weight:700;cursor:pointer;
+}
+.botao-mini.ok{color:var(--cat-saude)}
+.botao-mini.apagar{color:var(--perigo)}
+.evento.concluido{opacity:.45}
+.evento.concluido .titulo{text-decoration:line-through}
+
+.vazio{
+  text-align:center;color:var(--texto-2);padding:40px 10px;line-height:1.6;
+}
+.vazio .grande{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.4rem;color:var(--luar)}
+
+/* ---------- Botões flutuantes ---------- */
+.flutuantes{position:fixed;right:18px;bottom:22px;display:flex;flex-direction:column;gap:12px;z-index:5}
+.fab{
+  width:58px;height:58px;border-radius:50%;border:none;cursor:pointer;
+  font-size:1.6rem;font-weight:700;color:#141a2c;background:var(--lua);
+  box-shadow:0 6px 20px #00000066;
+}
+.fab.secundario{width:46px;height:46px;font-size:1.1rem;background:var(--cartao-2);color:var(--texto-2);border:1px solid var(--borda);margin-left:auto}
+
+/* ---------- Modais ---------- */
+.modal-fundo{
+  display:none;position:fixed;inset:0;background:#060912cc;z-index:10;
+  align-items:flex-end;justify-content:center;
+}
+.modal-fundo.aberto{display:flex}
+.modal{
+  width:100%;max-width:520px;background:var(--cartao);
+  border:1px solid var(--borda);border-radius:20px 20px 0 0;
+  padding:20px 20px 30px;max-height:90vh;overflow-y:auto;
+}
+.modal h2{
+  font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;
+  font-size:1.5rem;margin-bottom:14px;color:var(--luar);
+}
+label{display:block;font-size:.8rem;font-weight:700;color:var(--texto-2);margin:12px 0 5px;letter-spacing:.03em}
+input,textarea,select{
+  width:100%;background:var(--fundo);border:1px solid var(--borda);
+  border-radius:10px;padding:11px 12px;color:var(--texto);font-family:inherit;font-size:.95rem;
+}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--luar);outline-offset:1px}
+textarea{min-height:70px;resize:vertical}
+.linha-dupla{display:flex;gap:10px}
+.linha-dupla > div{flex:1}
+.botao{
+  width:100%;margin-top:18px;padding:14px;border:none;border-radius:12px;
+  background:var(--lua);color:#141a2c;font-weight:800;font-size:1rem;cursor:pointer;
+}
+.botao.discreto{background:var(--cartao-2);color:var(--texto-2);border:1px solid var(--borda)}
+.aviso{font-size:.8rem;color:var(--texto-2);line-height:1.5;margin-top:10px}
+.aviso b{color:var(--lua)}
+.status-notif{font-size:.85rem;font-weight:700;margin-top:8px}
+.status-notif.ok{color:var(--cat-saude)}
+.status-notif.pendente{color:var(--perigo)}
+@media (prefers-reduced-motion:no-preference){
+  .evento{animation:surgir .25s ease both}
+  @keyframes surgir{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <svg class="lua-svg" id="iconeCeu" width="44" height="44" viewBox="0 0 44 44"></svg>
+  <div>
+    <h1 class="saudacao" id="saudacao">Boa noite</h1>
+    <div class="data-extenso" id="dataExtenso"></div>
+    <div class="resumo-dia" id="resumoDia"></div>
+  </div>
+</header>
+
+<nav class="abas">
+  <button class="aba ativa" data-vista="hoje">Hoje</button>
+  <button class="aba" data-vista="semana">Semana</button>
+  <button class="aba" data-vista="todos">Todos</button>
+</nav>
+
+<main id="conteudo"></main>
+
+<div class="flutuantes">
+  <button class="fab secundario" id="botaoConfig" title="Configurações" aria-label="Configurações">⚙</button>
+  <button class="fab" id="botaoNovo" title="Novo compromisso" aria-label="Novo compromisso">+</button>
+</div>
+
+<!-- Modal: novo/editar compromisso -->
+<div class="modal-fundo" id="modalEvento">
+  <div class="modal">
+    <h2 id="tituloModal">Novo compromisso</h2>
+    <label for="campoTitulo">Título</label>
+    <input id="campoTitulo" placeholder="Ex: Revisar capítulo 3">
+    <div class="linha-dupla">
+      <div>
+        <label for="campoData">Data</label>
+        <input id="campoData" type="date">
+      </div>
+      <div>
+        <label for="campoHora">Hora (opcional)</label>
+        <input id="campoHora" type="time">
+      </div>
+    </div>
+    <div class="linha-dupla">
+      <div>
+        <label for="campoCategoria">Categoria</label>
+        <select id="campoCategoria">
+          <option value="compromisso">📌 Compromisso</option>
+          <option value="escrita">✍️ Escrita</option>
+          <option value="saude">🌿 Saúde</option>
+          <option value="pessoal">💜 Pessoal</option>
+        </select>
+      </div>
+      <div>
+        <label for="campoRepete">Repetir</label>
+        <select id="campoRepete">
+          <option value="nao">Não repete</option>
+          <option value="diario">Todos os dias</option>
+          <option value="semanal">Toda semana</option>
+        </select>
+      </div>
+    </div>
+    <label for="campoLembrete">Lembrete antes (com o app aberto ou instalado)</label>
+    <select id="campoLembrete">
+      <option value="0">Na hora</option>
+      <option value="10">10 minutos antes</option>
+      <option value="30">30 minutos antes</option>
+      <option value="60">1 hora antes</option>
+      <option value="-1">Sem lembrete</option>
+    </select>
+    <label for="campoNotas">Notas</label>
+    <textarea id="campoNotas" placeholder="Detalhes, endereço, o que levar..."></textarea>
+    <button class="botao" id="botaoSalvar">Salvar</button>
+    <button class="botao discreto" id="botaoCancelar">Cancelar</button>
+  </div>
+</div>
+
+<!-- Modal: configurações -->
+<div class="modal-fundo" id="modalConfig">
+  <div class="modal">
+    <h2>Configurações</h2>
+    <label for="campoNome">Seu nome (para a saudação)</label>
+    <input id="campoNome" placeholder="Ex: Edmar">
+    <label for="campoHoraResumo">Horário do resumo matinal</label>
+    <input id="campoHoraResumo" type="time" value="07:00">
+    <button class="botao" id="botaoAtivarNotif">🔔 Ativar notificações</button>
+    <div class="status-notif" id="statusNotif"></div>
+    <p class="aviso">
+      <b>Como funciona o resumo matinal:</b> no horário escolhido, você recebe uma
+      notificação com os compromissos do dia. Ao tocar nela, a agenda abre direto
+      em "Hoje". Para funcionar mesmo com o app fechado, instale a agenda na tela
+      inicial (menu do navegador → <b>Adicionar à tela inicial</b>) e permita as
+      notificações. Celulares não permitem que nenhum app se abra sozinho ao ligar
+      — a notificação matinal é o caminho mais próximo disso.
+    </p>
+    <button class="botao discreto" id="botaoExportar">⬇ Exportar backup (JSON)</button>
+    <button class="botao discreto" id="botaoImportar">⬆ Importar backup</button>
+    <input type="file" id="campoArquivo" accept="application/json" style="display:none">
+    <button class="botao discreto" id="botaoFecharConfig">Fechar</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   DADOS — tudo fica salvo no aparelho (localStorage)
+   ============================================================ */
+const CHAVE = 'agenda.meudia.v1';
+
+function carregar(){
+  try{
+    return JSON.parse(localStorage.getItem(CHAVE)) || padrao();
+  }catch(e){ return padrao(); }
+}
+function padrao(){
+  return { nome:'', horaResumo:'07:00', ultimoResumo:'', eventos:[] };
+}
+let dados = carregar();
+
+function salvar(){
+  localStorage.setItem(CHAVE, JSON.stringify(dados));
+  atualizarCacheParaSW();   // espelha os dados para o service worker
+  renderizar();
+}
+
+/* ============================================================
+   DATAS — utilitários
+   ============================================================ */
+const DIAS = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+function hojeStr(d = new Date()){
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const dia = String(d.getDate()).padStart(2,'0');
+  return `${d.getFullYear()}-${m}-${dia}`;
+}
+function dataDe(str){ const [a,m,d] = str.split('-').map(Number); return new Date(a, m-1, d); }
+function extenso(d){ return `${DIAS[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`; }
+
+/* O evento ocorre nesta data? (trata repetições) */
+function ocorreEm(ev, dataStr){
+  if(dataStr < ev.data) return false;
+  if(ev.repete === 'diario') return true;
+  if(ev.repete === 'semanal') return dataDe(dataStr).getDay() === dataDe(ev.data).getDay();
+  return ev.data === dataStr;
+}
+function eventosDoDia(dataStr){
+  return dados.eventos
+    .filter(ev => ocorreEm(ev, dataStr))
+    .sort((a,b) => (a.hora||'99:99').localeCompare(b.hora||'99:99'));
+}
+function estaConcluido(ev, dataStr){
+  return (ev.concluidoEm||[]).includes(dataStr);
+}
+
+/* ============================================================
+   CABEÇALHO — saudação, céu e resumo
+   ============================================================ */
+function desenharCeu(){
+  const h = new Date().getHours();
+  const svg = document.getElementById('iconeCeu');
+  if(h >= 6 && h < 18){
+    svg.innerHTML = `<circle cx="22" cy="22" r="10" fill="#E8C97A"/>` +
+      [0,45,90,135,180,225,270,315].map(a=>{
+        const r=(a*Math.PI)/180, x1=22+14*Math.cos(r), y1=22+14*Math.sin(r),
+              x2=22+18*Math.cos(r), y2=22+18*Math.sin(r);
+        return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#E8C97A" stroke-width="2" stroke-linecap="round"/>`;
+      }).join('');
+  }else{
+    svg.innerHTML = `
+      <circle cx="22" cy="22" r="13" fill="#C9D4E8"/>
+      <circle cx="27" cy="19" r="11" fill="#0E1220"/>
+      <circle cx="10" cy="9" r="1.2" fill="#ffffffaa"/>
+      <circle cx="37" cy="33" r="1" fill="#ffffff77"/>`;
+  }
+}
+function atualizarCabecalho(){
+  const h = new Date().getHours();
+  let s = 'Boa noite';
+  if(h >= 5 && h < 12) s = 'Bom dia';
+  else if(h >= 12 && h < 18) s = 'Boa tarde';
+  if(dados.nome) s += ', ' + dados.nome;
+  document.getElementById('saudacao').textContent = s;
+  document.getElementById('dataExtenso').textContent = extenso(new Date());
+
+  const n = eventosDoDia(hojeStr()).filter(ev => !estaConcluido(ev, hojeStr())).length;
+  document.getElementById('resumoDia').textContent =
+    n === 0 ? 'Nenhum compromisso pendente hoje. ✦'
+    : n === 1 ? '1 compromisso pendente hoje.'
+    : `${n} compromissos pendentes hoje.`;
+  desenharCeu();
+}
+
+/* ============================================================
+   RENDERIZAÇÃO das vistas
+   ============================================================ */
+let vistaAtual = 'hoje';
+const CORES_CAT = {compromisso:'var(--cat-compromisso)', escrita:'var(--cat-escrita)', saude:'var(--cat-saude)', pessoal:'var(--cat-pessoal)'};
+const NOMES_CAT = {compromisso:'📌 Compromisso', escrita:'✍️ Escrita', saude:'🌿 Saúde', pessoal:'💜 Pessoal'};
+
+function cartaoEvento(ev, dataStr){
+  const feito = estaConcluido(ev, dataStr);
+  const div = document.createElement('div');
+  div.className = 'evento' + (feito ? ' concluido' : '');
+  div.style.setProperty('--cor-cat', CORES_CAT[ev.categoria] || 'var(--luar)');
+  div.innerHTML = `
+    <div class="hora ${ev.hora ? '' : 'sem-hora'}">${ev.hora || 'dia todo'}</div>
+    <div class="titulo"></div>
+    ${ev.notas ? '<div class="notas"></div>' : ''}
+    <div class="rodape">
+      <span class="chip">${NOMES_CAT[ev.categoria] || ev.categoria}</span>
+      ${ev.repete !== 'nao' ? `<span class="chip repete">↻ ${ev.repete === 'diario' ? 'diário' : 'semanal'}</span>` : ''}
+      <div class="acoes">
+        <button class="botao-mini ok">${feito ? '↩' : '✓'}</button>
+        <button class="botao-mini">✎</button>
+        <button class="botao-mini apagar">🗑</button>
+      </div>
+    </div>`;
+  div.querySelector('.titulo').textContent = ev.titulo;
+  if(ev.notas) div.querySelector('.notas').textContent = ev.notas;
+  const [bOk, bEditar, bApagar] = div.querySelectorAll('.acoes button');
+  bOk.onclick = () => alternarConcluido(ev.id, dataStr);
+  bEditar.onclick = () => abrirModalEvento(ev.id);
+  bApagar.onclick = () => apagarEvento(ev.id);
+  return div;
+}
+
+function blocoDia(dataStr, titulo){
+  const evs = eventosDoDia(dataStr);
+  const frag = document.createDocumentFragment();
+  const h = document.createElement('div');
+  h.className = 'dia-titulo';
+  h.textContent = titulo;
+  frag.appendChild(h);
+  const linha = document.createElement('div');
+  linha.className = 'linha';
+  if(evs.length === 0){
+    const v = document.createElement('div');
+    v.className = 'vazio';
+    v.innerHTML = '<span class="grande">Dia livre.</span>';
+    linha.appendChild(v);
+  } else {
+    evs.forEach(ev => linha.appendChild(cartaoEvento(ev, dataStr)));
+  }
+  frag.appendChild(linha);
+  return frag;
+}
+
+function renderizar(){
+  atualizarCabecalho();
+  const c = document.getElementById('conteudo');
+  c.innerHTML = '';
+  if(vistaAtual === 'hoje'){
+    if(eventosDoDia(hojeStr()).length === 0){
+      c.innerHTML = `<div class="vazio"><span class="grande">A noite está calma —<br>nada agendado para hoje.</span><br><br>Toque em <b style="color:var(--lua)">+</b> para criar o primeiro compromisso.</div>`;
+    } else {
+      c.appendChild(blocoDia(hojeStr(), 'Hoje'));
+    }
+  }
+  else if(vistaAtual === 'semana'){
+    for(let i = 0; i < 7; i++){
+      const d = new Date(); d.setDate(d.getDate() + i);
+      const ds = hojeStr(d);
+      const rotulo = i === 0 ? 'Hoje' : i === 1 ? 'Amanhã' : `${DIAS[d.getDay()]}, ${d.getDate()}/${d.getMonth()+1}`;
+      if(eventosDoDia(ds).length > 0 || i === 0) c.appendChild(blocoDia(ds, rotulo));
+    }
+  }
+  else { /* todos */
+    if(dados.eventos.length === 0){
+      c.innerHTML = `<div class="vazio"><span class="grande">Ainda não há nada por aqui.</span></div>`;
+      return;
+    }
+    const ordenados = [...dados.eventos].sort((a,b)=> (a.data+(a.hora||'')).localeCompare(b.data+(b.hora||'')));
+    ordenados.forEach(ev => {
+      const bloco = document.createElement('div');
+      const t = document.createElement('div');
+      t.className = 'dia-titulo';
+      t.textContent = extenso(dataDe(ev.data)) + (ev.repete !== 'nao' ? ' (início da repetição)' : '');
+      const linha = document.createElement('div');
+      linha.className = 'linha';
+      linha.appendChild(cartaoEvento(ev, ev.data));
+      bloco.appendChild(t); bloco.appendChild(linha);
+      c.appendChild(bloco);
+    });
+  }
+}
+
+/* ============================================================
+   AÇÕES — criar, editar, concluir, apagar
+   ============================================================ */
+let editandoId = null;
+
+function abrirModalEvento(id = null){
+  editandoId = id;
+  const ev = id ? dados.eventos.find(e => e.id === id) : null;
+  document.getElementById('tituloModal').textContent = ev ? 'Editar compromisso' : 'Novo compromisso';
+  document.getElementById('campoTitulo').value = ev ? ev.titulo : '';
+  document.getElementById('campoData').value = ev ? ev.data : hojeStr();
+  document.getElementById('campoHora').value = ev ? (ev.hora || '') : '';
+  document.getElementById('campoCategoria').value = ev ? ev.categoria : 'compromisso';
+  document.getElementById('campoRepete').value = ev ? ev.repete : 'nao';
+  document.getElementById('campoLembrete').value = ev ? String(ev.lembreteMin) : '10';
+  document.getElementById('campoNotas').value = ev ? (ev.notas || '') : '';
+  document.getElementById('modalEvento').classList.add('aberto');
+}
+function fecharModalEvento(){ document.getElementById('modalEvento').classList.remove('aberto'); }
+
+function salvarEvento(){
+  const titulo = document.getElementById('campoTitulo').value.trim();
+  const data = document.getElementById('campoData').value;
+  if(!titulo || !data){ alert('Preencha ao menos o título e a data.'); return; }
+  const novo = {
+    id: editandoId || String(Date.now()),
+    titulo,
+    data,
+    hora: document.getElementById('campoHora').value || '',
+    categoria: document.getElementById('campoCategoria').value,
+    repete: document.getElementById('campoRepete').value,
+    lembreteMin: Number(document.getElementById('campoLembrete').value),
+    notas: document.getElementById('campoNotas').value.trim(),
+    concluidoEm: editandoId ? (dados.eventos.find(e=>e.id===editandoId).concluidoEm||[]) : [],
+    lembretesEnviados: []
+  };
+  if(editandoId){
+    dados.eventos = dados.eventos.map(e => e.id === editandoId ? novo : e);
+  } else {
+    dados.eventos.push(novo);
+  }
+  fecharModalEvento();
+  salvar();
+}
+
+function alternarConcluido(id, dataStr){
+  const ev = dados.eventos.find(e => e.id === id);
+  if(!ev) return;
+  ev.concluidoEm = ev.concluidoEm || [];
+  if(ev.concluidoEm.includes(dataStr)) ev.concluidoEm = ev.concluidoEm.filter(d => d !== dataStr);
+  else ev.concluidoEm.push(dataStr);
+  salvar();
+}
+
+function apagarEvento(id){
+  if(!confirm('Apagar este compromisso?')) return;
+  dados.eventos = dados.eventos.filter(e => e.id !== id);
+  salvar();
+}
+
+/* ============================================================
+   NOTIFICAÇÕES
+   - Resumo matinal no horário configurado
+   - Lembretes antes de cada compromisso
+   (verificados a cada 30s com o app aberto; com o app fechado,
+    o service worker tenta via sincronização periódica)
+   ============================================================ */
+async function ativarNotificacoes(){
+  if(!('Notification' in window)){
+    alert('Este navegador não suporta notificações.');
+    return;
+  }
+  const perm = await Notification.requestPermission();
+  mostrarStatusNotif();
+  if(perm === 'granted'){
+    notificar('Notificações ativadas 🌙', 'Você receberá o resumo matinal e os lembretes do dia.');
+    registrarSincronizacaoPeriodica();
+  }
+}
+function mostrarStatusNotif(){
+  const el = document.getElementById('statusNotif');
+  if(!('Notification' in window)){ el.textContent = 'Sem suporte a notificações.'; return; }
+  if(Notification.permission === 'granted'){ el.textContent = '✓ Notificações permitidas'; el.className = 'status-notif ok'; }
+  else { el.textContent = '✗ Notificações ainda não permitidas'; el.className = 'status-notif pendente'; }
+}
+async function notificar(titulo, corpo){
+  if(Notification.permission !== 'granted') return;
+  const reg = await navigator.serviceWorker.getRegistration();
+  if(reg) reg.showNotification(titulo, { body: corpo, icon: 'icone-192.png', badge: 'icone-192.png', tag: 'agenda' });
+  else new Notification(titulo, { body: corpo });
+}
+
+function verificarResumoMatinal(){
+  const agora = new Date();
+  const [h, m] = (dados.horaResumo || '07:00').split(':').map(Number);
+  const jaPassou = agora.getHours() > h || (agora.getHours() === h && agora.getMinutes() >= m);
+  if(jaPassou && dados.ultimoResumo !== hojeStr()){
+    const evs = eventosDoDia(hojeStr());
+    const corpo = evs.length === 0
+      ? 'Nenhum compromisso agendado. Dia livre! ✦'
+      : evs.slice(0,5).map(e => `${e.hora ? e.hora + ' — ' : ''}${e.titulo}`).join('\n') +
+        (evs.length > 5 ? `\n…e mais ${evs.length - 5}.` : '');
+    notificar('🌅 Seu dia de hoje', corpo);
+    dados.ultimoResumo = hojeStr();
+    localStorage.setItem(CHAVE, JSON.stringify(dados));
+    atualizarCacheParaSW();
+  }
+}
+
+function verificarLembretes(){
+  const agora = new Date();
+  eventosDoDia(hojeStr()).forEach(ev => {
+    if(!ev.hora || ev.lembreteMin < 0) return;
+    const [h, m] = ev.hora.split(':').map(Number);
+    const momento = new Date(); momento.setHours(h, m, 0, 0);
+    const disparo = new Date(momento.getTime() - ev.lembreteMin * 60000);
+    const chave = hojeStr() + '|' + ev.id;
+    ev.lembretesEnviados = ev.lembretesEnviados || [];
+    if(agora >= disparo && agora <= momento && !ev.lembretesEnviados.includes(chave) && !estaConcluido(ev, hojeStr())){
+      notificar('⏰ ' + ev.titulo, ev.lembreteMin > 0 ? `Em ${ev.lembreteMin} minutos (${ev.hora}).` : `Agora (${ev.hora}).`);
+      ev.lembretesEnviados.push(chave);
+      localStorage.setItem(CHAVE, JSON.stringify(dados));
+    }
+  });
+}
+
+/* Espelha os dados no Cache API para o service worker ler com o app fechado */
+async function atualizarCacheParaSW(){
+  try{
+    const cache = await caches.open('agenda-dados');
+    await cache.put('dados-agenda', new Response(JSON.stringify(dados), {headers:{'Content-Type':'application/json'}}));
+  }catch(e){ /* sem suporte — segue normalmente */ }
+}
+
+/* Sincronização periódica (Chrome/Android com PWA instalado) */
+async function registrarSincronizacaoPeriodica(){
+  try{
+    const reg = await navigator.serviceWorker.ready;
+    if('periodicSync' in reg){
+      await reg.periodicSync.register('resumo-matinal', { minInterval: 6 * 60 * 60 * 1000 });
+    }
+  }catch(e){ /* nem todo aparelho permite — o resumo funciona ao abrir o app */ }
+}
+
+/* ============================================================
+   CONFIGURAÇÕES + BACKUP
+   ============================================================ */
+function abrirConfig(){
+  document.getElementById('campoNome').value = dados.nome || '';
+  document.getElementById('campoHoraResumo').value = dados.horaResumo || '07:00';
+  mostrarStatusNotif();
+  document.getElementById('modalConfig').classList.add('aberto');
+}
+function fecharConfig(){
+  dados.nome = document.getElementById('campoNome').value.trim();
+  dados.horaResumo = document.getElementById('campoHoraResumo').value || '07:00';
+  document.getElementById('modalConfig').classList.remove('aberto');
+  salvar();
+}
+function exportarBackup(){
+  const blob = new Blob([JSON.stringify(dados, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'agenda-backup-' + hojeStr() + '.json';
+  a.click();
+}
+function importarBackup(arquivo){
+  const leitor = new FileReader();
+  leitor.onload = () => {
+    try{
+      const novo = JSON.parse(leitor.result);
+      if(!Array.isArray(novo.eventos)) throw new Error();
+      dados = novo;
+      salvar();
+      alert('Backup importado com sucesso!');
+    }catch(e){ alert('Arquivo inválido. Use um backup exportado por esta agenda.'); }
+  };
+  leitor.readAsText(arquivo);
+}
+
+/* ============================================================
+   INICIALIZAÇÃO
+   ============================================================ */
+document.querySelectorAll('.aba').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.aba').forEach(x => x.classList.remove('ativa'));
+  b.classList.add('ativa');
+  vistaAtual = b.dataset.vista;
+  renderizar();
+});
+document.getElementById('botaoNovo').onclick = () => abrirModalEvento();
+document.getElementById('botaoSalvar').onclick = salvarEvento;
+document.getElementById('botaoCancelar').onclick = fecharModalEvento;
+document.getElementById('botaoConfig').onclick = abrirConfig;
+document.getElementById('botaoFecharConfig').onclick = fecharConfig;
+document.getElementById('botaoAtivarNotif').onclick = ativarNotificacoes;
+document.getElementById('botaoExportar').onclick = exportarBackup;
+document.getElementById('botaoImportar').onclick = () => document.getElementById('campoArquivo').click();
+document.getElementById('campoArquivo').onchange = e => { if(e.target.files[0]) importarBackup(e.target.files[0]); };
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').then(registrarSincronizacaoPeriodica).catch(()=>{});
+}
+
+renderizar();
+atualizarCacheParaSW();
+verificarResumoMatinal();
+verificarLembretes();
+setInterval(() => { verificarResumoMatinal(); verificarLembretes(); atualizarCabecalho(); }, 30000);
+</script>
+</body>
+</html>
