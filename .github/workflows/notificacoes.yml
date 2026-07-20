@@ -1,0 +1,27 @@
+name: Enviar notificações da agenda
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  enviar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Preparar o Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependências
+        run: pip install firebase-admin
+
+      - name: Enviar notificações
+        env:
+          FIREBASE_CREDENCIAIS: ${{ secrets.FIREBASE_CREDENCIAIS }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python enviar_notificacoes.py
