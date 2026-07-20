@@ -7,7 +7,27 @@
    3. Ao tocar na notificação, abre a agenda direto em "Hoje"
    ============================================================ */
 
-const CACHE_APP = 'agenda-app-v1';
+/* ---------- Firebase Cloud Messaging ----------
+   COLE AQUI as mesmas chaves do index.html.
+   É isso que permite receber notificações com o app FECHADO. */
+importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDuFjaO47ViZUiHI8MzdCqsQwsTw5bKpIU",
+  authDomain: "agendapersonalizada-74597.firebaseapp.com",
+  databaseURL: "https://agendapersonalizada-74597-default-rtdb.firebaseio.com",
+  projectId: "agendapersonalizada-74597",
+  storageBucket: "agendapersonalizada-74597.firebasestorage.app",
+  messagingSenderId: "168365209333",
+  appId: "1:168365209333:web:dc7bebf4e9b94037f1f7bc"
+};
+if (firebaseConfig.apiKey !== "COLE_AQUI") {
+  firebase.initializeApp(firebaseConfig);
+  firebase.messaging(); // exibe automaticamente as notificações recebidas
+}
+
+const CACHE_APP = 'agenda-app-v2';
 const ARQUIVOS = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', (evento) => {

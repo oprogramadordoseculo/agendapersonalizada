@@ -265,7 +265,72 @@ textarea{min-height:70px;resize:vertical}
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
 <script>
+/* ============================================================
+   FIREBASE — COLE AQUI AS SUAS CHAVES
+   (Console do Firebase → Configurações do projeto → Seus apps)
+   Enquanto estiver "COLE_AQUI", o app funciona normal,
+   só sem as notificações em segundo plano.
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyDuFjaO47ViZUiHI8MzdCqsQwsTw5bKpIU",
+  authDomain: "agendapersonalizada-74597.firebaseapp.com",
+  databaseURL: "https://agendapersonalizada-74597-default-rtdb.firebaseio.com",
+  projectId: "agendapersonalizada-74597",
+  storageBucket: "agendapersonalizada-74597.firebasestorage.app",
+  messagingSenderId: "168365209333",
+  appId: "1:168365209333:web:dc7bebf4e9b94037f1f7bc"
+};
+/* Console do Firebase → Cloud Messaging → Certificados push da Web */
+const CHAVE_VAPID = "BDPzIRrQnhrvi1uzJp7stUMl0fs_ARuapMr_Hp46hfJUa67C93KafXxdU12povioOljQodMb7Mdwwp4lrvS1sMU";
+
+const firebasePronto = firebaseConfig.apiKey !== "COLE_AQUI";
+if (firebasePronto) firebase.initializeApp(firebaseConfig);
+
+/* Identidade anônima deste aparelho na nuvem */
+function idNuvem(){
+  let id = localStorage.getItem('agenda.id');
+  if(!id){
+    id = 'u' + Date.now() + Math.random().toString(36).slice(2, 8);
+    localStorage.setItem('agenda.id', id);
+  }
+  return id;
+}
+
+/* Envia a agenda para o Realtime Database — é de lá que o
+   robô do GitHub lê os compromissos para notificar */
+async function sincronizarNuvem(){
+  if(!firebasePronto) return;
+  try{
+    await firebase.database().ref('agendas/' + idNuvem()).set({
+      token: localStorage.getItem('agenda.tokenFCM') || '',
+      horaResumo: dados.horaResumo || '07:00',
+      ultimoResumo: dados.ultimoResumo || '',
+      eventos: dados.eventos || [],
+      atualizadoEm: new Date().toISOString()
+    });
+  }catch(e){ console.log('Sincronização:', e); }
+}
+
+/* Pede ao FCM o "endereço" deste aparelho para receber push */
+async function obterTokenFCM(){
+  if(!firebasePronto || Notification.permission !== 'granted') return;
+  try{
+    const reg = await navigator.serviceWorker.ready;
+    const token = await firebase.messaging().getToken({
+      vapidKey: CHAVE_VAPID,
+      serviceWorkerRegistration: reg
+    });
+    if(token){
+      localStorage.setItem('agenda.tokenFCM', token);
+      await sincronizarNuvem();
+    }
+  }catch(e){ console.log('Token FCM:', e); }
+}
+
 /* ============================================================
    DADOS — tudo fica salvo no aparelho (localStorage)
    ============================================================ */
@@ -284,6 +349,7 @@ let dados = carregar();
 function salvar(){
   localStorage.setItem(CHAVE, JSON.stringify(dados));
   atualizarCacheParaSW();   // espelha os dados para o service worker
+  sincronizarNuvem();       // envia para o Firebase (notificações em 2º plano)
   renderizar();
 }
 
@@ -526,6 +592,7 @@ async function ativarNotificacoes(){
   if(perm === 'granted'){
     notificar('Notificações ativadas 🌙', 'Você receberá o resumo matinal e os lembretes do dia.');
     registrarSincronizacaoPeriodica();
+    await obterTokenFCM();   // registra o aparelho no Firebase
   }
 }
 function mostrarStatusNotif(){
@@ -542,6 +609,8 @@ async function notificar(titulo, corpo){
 }
 
 function verificarResumoMatinal(){
+  /* Com FCM ativo, quem envia é o robô do GitHub (evita duplicar) */
+  if(firebasePronto && localStorage.getItem('agenda.tokenFCM')) return;
   const agora = new Date();
   const [h, m] = (dados.horaResumo || '07:00').split(':').map(Number);
   const jaPassou = agora.getHours() > h || (agora.getHours() === h && agora.getMinutes() >= m);
@@ -559,6 +628,8 @@ function verificarResumoMatinal(){
 }
 
 function verificarLembretes(){
+  /* Com FCM ativo, quem envia é o robô do GitHub (evita duplicar) */
+  if(firebasePronto && localStorage.getItem('agenda.tokenFCM')) return;
   const agora = new Date();
   eventosDoDia(hojeStr()).forEach(ev => {
     if(!ev.hora || ev.lembreteMin < 0) return;
@@ -654,6 +725,8 @@ if('serviceWorker' in navigator){
 
 renderizar();
 atualizarCacheParaSW();
+obterTokenFCM();        // renova o registro no Firebase a cada abertura
+sincronizarNuvem();
 verificarResumoMatinal();
 verificarLembretes();
 setInterval(() => { verificarResumoMatinal(); verificarLembretes(); atualizarCabecalho(); }, 30000);
